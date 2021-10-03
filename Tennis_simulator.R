@@ -7,10 +7,10 @@ play_point <- function(game, p) {
     ifelse (rbinom(1,1, prob = p), 
             {
               env_poke(game, "p1_pt", game$p1_pt+1)
-              },
+            },
             {
               env_poke(game, "p2_pt", game$p2_pt+1)
-              })
+            })
   )
 }
 
@@ -29,7 +29,7 @@ play_game <- function(set,p) {
   while (game$p1_pt<4 & 
          game$p2_pt<4 | 
          abs(diff(c(game$p1_pt,game$p2_pt)))<2
-         ) {
+  ) {
     play_point(game=game, p=p)
   }
   
@@ -59,7 +59,7 @@ start_tiebreak <- function() {
 
 play_tiebreak <- function(match,p) {
   tiebreak <- start_tiebreak()
-
+  
   while (tiebreak$p1_pt<7 & 
          tiebreak$p2_pt<7 | 
          abs(diff(c(tiebreak$p1_pt,tiebreak$p2_pt)))<2
@@ -70,7 +70,7 @@ play_tiebreak <- function(match,p) {
   ifelse(tiebreak$p1_pt>tiebreak$p2_pt,
          yes = env_poke(match, "p1_set", match$p1_set+1),
          no = env_poke(match, "p2_set", match$p2_set+1))
-  }
+}
 
 play_set <- function(match,p, games_to_win) {
   set <- start_set()
@@ -78,14 +78,16 @@ play_set <- function(match,p, games_to_win) {
   while (set$p1_games<games_to_win & 
          set$p2_games<games_to_win | 
          abs(diff(c(set$p1_games,set$p2_games)))<2 
-         ) {
-    
-    # tiebreak
-    if (set$p1_games==games_to_win & set$p2_games==games_to_win) {env_poke(set,"tiebreak",T)}
-    if (set$tiebreak) {break}
+  ) {
     
     play_game(set=set,p=p)
-   
+    
+    # tiebreak
+    if (set$p1_games==games_to_win & set$p2_games==games_to_win) {
+      env_poke(set,"tiebreak",T)
+      break
+    }
+    
   }
   
   if (set$tiebreak) {
@@ -99,9 +101,7 @@ play_set <- function(match,p, games_to_win) {
            yes = env_poke(match, "p1_set", match$p1_set+1),
            no = env_poke(match, "p2_set", match$p2_set+1))
   }
-  
 }
-
 
 # Match ####
 start_match <- function() {
@@ -112,33 +112,36 @@ start_match <- function() {
   match
 }
 
-play_match <- function(p=.5,
+play_match <- function(p=.5, #probability of winning a single point for player1
                        sets_to_win=3,
                        games_to_win=6) {
-  p1_prob = p #probability of winning a single point for player1
-
+  
   match <- start_match()
   
   while (match$p1_set<sets_to_win & 
          match$p2_set<sets_to_win 
   ) {
-    play_set(match = match,p=p, games_to_win=games_to_win)
+    play_set(match = match,
+             p=p, 
+             games_to_win=games_to_win)
   }
-
+  
   env_get_list(match, nms = c("p1_set","p2_set"))  %>% 
     unlist()
 }
+
+# play a match ! ####
 
 play_match(sets_to_win = 3,
            games_to_win = 6,
            p = .5)
 
-lots_of_matches <- replicate(10,play_match(sets_to_win = 3,
-                                            games_to_win = 6,
-                                            p = .55))
 
-
-
+# play 100 matches! ####
+lots_of_matches <- replicate(100,suppressMessages(play_match(sets_to_win = 3,
+                                           games_to_win = 6,
+                                           p = .55)))
+# and see how many you won
 t(lots_of_matches) %>%
   as_tibble() %>%
   rownames_to_column("match_n") %>%
