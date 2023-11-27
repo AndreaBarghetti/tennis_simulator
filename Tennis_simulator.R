@@ -137,12 +137,31 @@ play_match(sets_to_win = 3,
            p = .5)
 
 
-# play 100 matches! ####
-lots_of_matches <- replicate(100,suppressMessages(play_match(sets_to_win = 3,
-                                           games_to_win = 6,
-                                           p = .55)))
-# and see how many you won
-t(lots_of_matches) %>%
-  as_tibble() %>%
-  rownames_to_column("match_n") %>%
-  summarise(win = mean(p1_set>p2_set))
+# Visualization
+# Probaility of winning a match given the probability of winning a point
+res = map_dfr(seq(0.3,.7,length.out=100), function(p) {
+  res = replicate(100,suppressMessages(play_match(sets_to_win = 3,
+                                                  games_to_win = 6,
+                                                  p = p))) %>% 
+    apply(1,function(x) {mean(x==3)}) 
+  c(p=p,res)
+})
+
+mod = glm(data = res,
+          p1_set ~ p, 
+          family=binomial(link = 'probit'),
+          weights = rep(100,100))
+
+plot = res %>% 
+  mutate(p1 = predict(mod, type="response")) %>% 
+  ggplot(aes(x=p)) +
+  geom_line(aes(y=p1), size=1) +
+  geom_point(aes(y=p1_set), size=.5) +
+  theme_linedraw() +
+  labs(x='Probability of winning a point',
+       y="Probability of winning the match")
+
+ggsave(plot = plot, device = "png",
+       width = 10,height = 10,
+       units = 'cm',
+       filename = "tennis_p.png")
