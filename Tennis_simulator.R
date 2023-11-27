@@ -162,6 +162,6 @@ plot = res %>%
        y="Probability of winning the match")
 
 ggsave(plot = plot, device = "png",
-       width = 10,height = 10,
+       width = 12,height = 10,
        units = 'cm',
        filename = "tennis_p.png")
